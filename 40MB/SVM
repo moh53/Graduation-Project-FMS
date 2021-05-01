@@ -1,0 +1,109 @@
+import numpy as np
+from numpy import load
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
+"""
+load numpy array
+"""
+data_Y = load('C:/Users/GMB/Desktop/IDC_40MB/Y.npy')
+data_X = load('C:/Users/GMB/Desktop/IDC_40MB/X.npy')
+
+
+"""
+describe the dataset
+"""
+def describeData(a,b):
+    print('Total number of images: {}'.format(len(a)))
+    print('Number of IDC(-) Images: {}'.format(np.sum(b==0)))
+    print('Number of IDC(+) Images: {}'.format(np.sum(b==1)))
+    print('Percentage of positive images: {:.2f}%'.format(100*np.mean(b)))
+    print('Image shape (Width, Height, Channels): {}'.format(a[0].shape))
+describeData(data_X,data_Y)
+
+
+"""
+load the data as negative and positive
+"""
+imgs0 = data_X[data_Y==0]
+imgs1 = data_X[data_Y==1]
+# (0 = no IDC, 1 = IDC)
+
+
+def plotOne(a, b):
+    """
+    Plot one numpy array
+    """
+    plt.subplot(2,1,2)
+    plt.title('IDC (-)')
+    plt.imshow(a[80])
+
+    plt.subplot(2,1,1)
+    plt.title('IDC (+)')
+    plt.imshow(b[100])
+   # plt.show()
+
+
+plotOne(imgs0, imgs1)
+
+
+"""
+concat the negative and positive dataset and shuffle them.
+"""
+dataset = np.concatenate([imgs0, imgs1])
+np.random.shuffle(dataset)
+
+
+"""
+split yhe dataset
+"""
+test_ratio = 0.25
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(data_X, data_Y, test_size=test_ratio, random_state=0)
+#print("the X_train shape", X_train.shape)
+
+
+"""
+transform the 4 dim to 2 dim
+"""
+nsamples, nx, ny, dim = X_train.shape
+d2_X_train = X_train.reshape((nsamples, nx*ny*dim))
+nsamples1, nx1, ny1, dim1 = X_test.shape
+d2_X_test = X_test.reshape((nsamples1, nx1*ny1*dim1))
+
+
+"""
+feature scaling
+"""
+from sklearn.preprocessing import StandardScaler
+sc = StandardScaler()
+X_train = sc.fit_transform(d2_X_train)
+X_test = sc.transform(d2_X_test)
+
+
+"""
+the SVM model
+"""
+from sklearn.svm import SVC
+classifier = SVC(kernel='rbf', random_state=0)
+print(classifier.fit(X_train, y_train))
+
+
+"""
+Predicting the Test set results
+"""
+y_pred = classifier.predict(X_test)
+
+
+"""
+the Confusion Matrix
+"""
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+"""
+the accuracy is .784
+"""
